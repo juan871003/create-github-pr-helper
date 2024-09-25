@@ -1,0 +1,27 @@
+{
+  "name": "create-github-pr-helper",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Automates creation of PRs to master and preprod. Adds comment to Jira ticket with links to newly created PRs",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "op run --env-file=\".env\" -- node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.5.4",
+    "@types/prompt-sync": "^4.2.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-fetch": "^3.3.2",
+    "octokit": "3.2.1",
+    "prompt-sync": "^4.2.0",
+    "tsx": "^4.19.0"
+  }
+}
