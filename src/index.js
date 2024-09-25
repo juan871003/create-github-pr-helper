@@ -83,7 +83,7 @@ const main = async (params) => {
   }
 
   console.log(
-    `Jira ticket: https://bingogroup.atlassian.net/browse/${ticketNumber}`
+    `Jira ticket: https://${envVars.owner}.atlassian.net/browse/${ticketNumber}`
   );
   console.log("Done 🪄");
 };
