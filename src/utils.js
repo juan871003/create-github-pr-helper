@@ -5,7 +5,7 @@ export const envVars = {
   jiraToken: process.env.JIRA_TOKEN,
   devReviewersStr: process.env.DEV_REVIEWERS,
   scrumMasterReviewersStr: process.env.SCRUM_MASTER_REVIEWERS,
-  owner: process.env.OWNER,
+  owner: process.env.REPO_OWNER,
   repo: process.env.REPO,
   me: process.env.ME,
 };
@@ -57,9 +57,9 @@ const isPrCreated = async (params) => {
   console.log(`Checking if open PR from ${head} to ${base} already exists...`);
 
   const { data } = await octokit.rest.pulls.list({
-    owner,
-    repo,
-    head: `${owner}:${head}`,
+    owner: envVars.owner,
+    repo: envVars.repo,
+    head: `${envVars.owner}:${head}`,
     base,
     state: "open",
   });
@@ -79,12 +79,12 @@ const createPr = async (params) => {
   console.log(`Creating PR from ${head} to ${base}`);
 
   const { data } = await octokit.rest.pulls.create({
-    owner,
-    repo,
+    owner: envVars.owner,
+    repo: envVars.repo,
     head,
     base,
     title: `\`${ticketNumber}\` - ${title}`,
-    body: `https://${owner}.atlassian.net/browse/${ticketNumber}`,
+    body: `https://${envVars.owner}.atlassian.net/browse/${ticketNumber}`,
   });
 
   return data;
@@ -96,8 +96,8 @@ const addLabel = async (params) => {
   console.log(`Adding label "${label}" to PR #${prNumber}`);
 
   await octokit.rest.issues.addLabels({
-    owner,
-    repo,
+    owner: envVars.owner,
+    repo: envVars.repo,
     issue_number: prNumber,
     labels: [label],
   });
@@ -108,8 +108,8 @@ const addReviewer = async (params) => {
   console.log(`Adding reviewer to PR #${prNumber}`);
 
   await octokit.rest.pulls.requestReviewers({
-    owner,
-    repo,
+    owner: envVars.owner,
+    repo: envVars.repo,
     pull_number: prNumber,
     ...reviewerParam,
   });
@@ -194,7 +194,7 @@ export const addCommentToJiraTicket = async (params) => {
   });
 
   const result = await nodeFetch(
-    `https://${owner}.atlassian.net/rest/api/3/issue/${jiraTicket}/comment`,
+    `https://${envVars.owner}.atlassian.net/rest/api/3/issue/${jiraTicket}/comment`,
     {
       method: "POST",
       headers: {
@@ -233,7 +233,7 @@ export const getJiraTicketTitle = async (params) => {
   const { jiraToken, jiraTicket } = params;
 
   const result = await nodeFetch(
-    `https://${owner}.atlassian.net/rest/api/3/issue/${jiraTicket}`,
+    `https://${envVars.owner}.atlassian.net/rest/api/3/issue/${jiraTicket}`,
     {
       method: "GET",
       headers: {

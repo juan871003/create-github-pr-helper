@@ -78,7 +78,6 @@ const main = async (params) => {
       jiraTicket: ticketNumber,
       isMasterPrExisting,
       isPreprodPrExisting,
-      z,
     });
   }
 
@@ -93,10 +92,10 @@ const getInput = prompt({ sigint: true });
 const head = getInput("Enter the branch name: ");
 let ticketNumber = undefined;
 if (headIsJiraTicket(head)) {
-  console.log("using branch name as ticket number");
+  console.log("using branch name as ticket number: ");
   ticketNumber = head;
 } else {
-  ticketNumber = getInput("Enter the Jira ticket number");
+  ticketNumber = getInput("Enter the Jira ticket number: ");
 }
 
 if (!head || !ticketNumber) {
