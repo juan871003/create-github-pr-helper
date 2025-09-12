@@ -4,11 +4,12 @@ import { Octokit } from "octokit";
 import prompt from "prompt-sync";
 import {
   getJiraTicketTitle,
-  headIsJiraTicket,
+  isCorrectJiraTicket,
   addCommentToJiraTicket,
   upsertPr,
   envVars,
   ensureEnvVar,
+  getBranchNames,
 } from "./utils.js";
 
 const { githubToken, jiraToken, devReviewersStr, scrumMasterReviewersStr } =
@@ -29,7 +30,12 @@ const octokit = new Octokit({
 });
 
 const main = async (params) => {
-  const { head, ticketNumber } = params;
+  const { ticketNumber } = params;
+
+  const { masterBranchName, preprodBranchName } = await getBranchNames({
+    octokit,
+    ticketNumber,
+  });
 
   const title = await getJiraTicketTitle({
     jiraToken,
@@ -40,7 +46,7 @@ const main = async (params) => {
 
   const [prToMasterUrl, isMasterPrExisting] = await upsertPr({
     octokit,
-    head,
+    head: masterBranchName,
     base: "master",
     ticketNumber,
     title,
@@ -50,7 +56,7 @@ const main = async (params) => {
 
   const [prToPreprodUrl, isPreprodPrExisting] = await upsertPr({
     octokit,
-    head,
+    head: preprodBranchName,
     base: "preprod",
     ticketNumber,
     title,
@@ -89,17 +95,14 @@ const main = async (params) => {
 
 const getInput = prompt({ sigint: true });
 
-const head = getInput("Enter the branch name: ");
-let ticketNumber = undefined;
-if (headIsJiraTicket(head)) {
-  console.log("using branch name as ticket number: ");
-  ticketNumber = head;
-} else {
-  ticketNumber = getInput("Enter the Jira ticket number: ");
+let ticketNumber = getInput("Enter jira ticket number: ");
+if (!ticketNumber.startsWith("GC-")) {
+  ticketNumber = `GC-${ticketNumber}`;
+}
+if (!isCorrectJiraTicket(ticketNumber)) {
+  throw new Error(
+    `Invalid Jira ticket format: ${ticketNumber}. It should start with "GC-".`
+  );
 }
 
-if (!head || !ticketNumber) {
-  throw new Error("Branch name and ticket number are required");
-}
-
-main({ head, ticketNumber });
+main({ ticketNumber });

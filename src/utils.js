@@ -8,6 +8,8 @@ export const envVars = {
   owner: process.env.REPO_OWNER,
   repo: process.env.REPO,
   me: process.env.ME,
+  masterBranchNameConvention:
+    process.env.MASTER_BRANCH_NAME_CONVENTION ?? "{ticketNumber}-master-merged",
 };
 
 export const ensureEnvVar = (envVar) => {
@@ -213,7 +215,7 @@ export const addCommentToJiraTicket = async (params) => {
   console.log("Comment added");
 };
 
-export const headIsJiraTicket = (head) => {
+export const isCorrectJiraTicket = (head) => {
   const startsWithGc = head.startsWith("GC-");
 
   if (!startsWithGc) {
@@ -248,8 +250,69 @@ export const getJiraTicketTitle = async (params) => {
   const json = await result?.json?.();
 
   if (!json || json.errorMessages?.length) {
-    throw new Error(`Error fetching Jira ticket ${jiraTicket}: ${result}`);
+    throw new Error(
+      `Error fetching Jira ticket ${jiraTicket}: ${JSON.stringify(
+        result ?? {}
+      )}`
+    );
   }
 
   return json?.fields?.summary;
+};
+
+export const getBranchNames = async ({ octokit, ticketNumber }) => {
+  // const response = await octokit.request("GET /repos/{owner}/{repo}/branches", {
+  //   owner: envVars.owner,
+  //   repo: envVars.repo,
+  // });
+
+  // console.log({ data: response?.data });
+  let masterBranchName = null;
+  let preprodBranchName = null;
+  await octokit.paginate(
+    "GET /repos/{owner}/{repo}/branches",
+    {
+      owner: envVars.owner,
+      repo: envVars.repo,
+    },
+    (page, done) => {
+      const branchNames = page.data.map((branch) => branch.name);
+      branchNames.forEach((branchName) => {
+        if (
+          branchName ===
+          envVars.masterBranchNameConvention.replace(
+            "{ticketNumber}",
+            ticketNumber
+          )
+        ) {
+          masterBranchName = branchName;
+        } else if (branchName.startsWith(ticketNumber)) {
+          preprodBranchName = branchName;
+        }
+        if (masterBranchName && preprodBranchName) {
+          done();
+        }
+      });
+    }
+  );
+
+  if (!masterBranchName) {
+    throw new Error(
+      `Oops, it seems you haven't pushed the branch to target master. We expect the branch name to be ${envVars.masterBranchNameConvention.replace(
+        "{ticketNumber}",
+        ticketNumber
+      )}. Please push the branch and try again.`
+    );
+  }
+
+  if (!preprodBranchName) {
+    throw new Error(
+      `Oops, it seems you haven't pushed the branch to target preprod. We expect the branch name to start with ${ticketNumber}. Please push the branch and try again.`
+    );
+  }
+
+  console.log(`Branch to master: ${masterBranchName}`);
+  console.log(`Branch to preprod: ${preprodBranchName}`);
+
+  return { masterBranchName, preprodBranchName };
 };
